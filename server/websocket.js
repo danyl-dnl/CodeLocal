@@ -9,12 +9,20 @@ const {
 
 const yjsMessageType = 1;
 const awarenessMessageType = 2;
-const initialCode = `function greet(name) {
-  console.log(\`Hello, \${name}!\`);
-}
+const initialFiles = {
+  "main.js": `import { greet } from "./utils.js";
 
 greet("OffGrid");
-`;
+`,
+  "utils.js": `export function greet(name) {
+  console.log(\`Hello, \${name}!\`);
+}
+`,
+  "README.md": `# OffGrid Project
+
+Collaborative coding over a local network.
+`,
+};
 
 function createYjsMessage(update) {
   const message = new Uint8Array(update.length + 1);
@@ -38,7 +46,7 @@ function setupWebSocketServer(httpServer) {
     path: "/ws",
   });
   const sharedDocument = new Y.Doc();
-  const sharedText = sharedDocument.getText("main.js");
+  const sharedFiles = sharedDocument.getMap("files");
   const awareness = new Awareness(sharedDocument);
   let documentInitialized = false;
 
@@ -122,8 +130,14 @@ function setupWebSocketServer(httpServer) {
         if (!documentInitialized) {
           documentInitialized = true;
 
-          if (sharedText.length === 0) {
-            sharedText.insert(0, initialCode);
+          if (sharedFiles.size === 0) {
+            sharedDocument.transact(() => {
+              for (const [fileName, content] of Object.entries(initialFiles)) {
+                const fileText = new Y.Text();
+                sharedFiles.set(fileName, fileText);
+                fileText.insert(0, content);
+              }
+            });
           }
         }
       } else if (message[0] === awarenessMessageType) {

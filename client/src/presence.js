@@ -32,7 +32,11 @@ export function createParticipantIdentity(name, clientId) {
 export function renderParticipantList(awareness, listElement, localClientId) {
   const participants = [...awareness.getStates().entries()]
     .filter(([, state]) => state.user?.name)
-    .map(([clientId, state]) => ({ clientId, ...state.user }))
+    .map(([clientId, state]) => ({
+      clientId,
+      activeFile: state.activeFile,
+      ...state.user,
+    }))
     .sort((first, second) => {
       if (first.clientId === localClientId) return -1;
       if (second.clientId === localClientId) return 1;
@@ -55,6 +59,11 @@ export function renderParticipantList(awareness, listElement, localClientId) {
     name.textContent = participant.name;
 
     item.append(avatar, name);
+
+    const activeFile = document.createElement("span");
+    activeFile.className = "participant-file";
+    activeFile.textContent = participant.activeFile || "No file";
+    item.append(activeFile);
 
     if (participant.clientId === localClientId) {
       const you = document.createElement("span");

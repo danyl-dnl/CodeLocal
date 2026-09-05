@@ -5,6 +5,8 @@ import { javascript } from "@codemirror/lang-javascript";
 import * as Y from "yjs";
 import { yCollab, yUndoManagerKeymap } from "y-codemirror.next";
 
+const undoManagers = new WeakMap();
+
 const editorTheme = EditorView.theme(
   {
     "&": {
@@ -43,13 +45,22 @@ const editorTheme = EditorView.theme(
   { dark: true },
 );
 
-export function createEditor(parent, sharedText, awareness) {
-  const undoManager = new Y.UndoManager(sharedText);
+export function createEditor(parent, sharedText, awareness, fileName) {
+  let undoManager = undoManagers.get(sharedText);
+
+  if (!undoManager) {
+    undoManager = new Y.UndoManager(sharedText);
+    undoManagers.set(sharedText, undoManager);
+  }
+
+  const languageExtension = fileName.toLowerCase().endsWith(".js")
+    ? javascript()
+    : [];
   const state = EditorState.create({
     doc: sharedText.toString(),
     extensions: [
       basicSetup,
-      javascript(),
+      languageExtension,
       editorTheme,
       yCollab(sharedText, awareness, { undoManager }),
       Prec.high(keymap.of(yUndoManagerKeymap)),
