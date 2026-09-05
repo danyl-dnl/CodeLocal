@@ -4,7 +4,7 @@ const { getLanAddresses } = require("./network");
 
 const app = express();
 const port = Number.parseInt(process.env.PORT, 10) || 3000;
-const clientDirectory = path.join(__dirname, "..", "client");
+const clientDirectory = path.join(__dirname, "..", "dist");
 
 app.get("/api/network-info", (_request, response) => {
   response.json({

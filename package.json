@@ -5,9 +5,15 @@
   "description": "Offline-first LAN collaborative coding platform",
   "main": "server/index.js",
   "scripts": {
-    "start": "node server/index.js"
+    "build": "vite build",
+    "start": "npm run build && node server/index.js"
   },
   "dependencies": {
+    "@codemirror/lang-javascript": "^6.2.5",
+    "codemirror": "^6.0.2",
     "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "vite": "^8.2.2"
   }
 }
