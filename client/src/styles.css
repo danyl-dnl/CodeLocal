@@ -123,7 +123,14 @@ button { font: inherit; }
 }
 
 .client-summary { display: flex; align-items: center; gap: 10px; }
-.client-summary svg { width: 24px; height: 24px; fill: #eef4ff; }
+.client-summary svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: #eef4ff;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
 
 .save-status {
   gap: 7px;

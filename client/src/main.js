@@ -43,7 +43,9 @@ app.innerHTML = `
         <span class="status-divider" aria-hidden="true"></span>
         <span class="client-summary">
           <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M16 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 0 8Zm8 1c-1.2 0-2.3.25-3.25.7A7.4 7.4 0 0 1 15 19v1h8v-1c0-3.3-3.1-6-7-6ZM8 14c-4 0-7 2.4-7 5.5V21h14v-1.5C15 16.4 12 14 8 14Z" />
+            <circle cx="9" cy="8" r="3" />
+            <circle cx="17" cy="9" r="2.5" />
+            <path d="M3 20c0-3.8 2.7-6 6-6s6 2.2 6 6M15 14.5c3.2 0 6 2 6 5.5" />
           </svg>
           <span class="client-count" id="client-count">0 clients</span>
         </span>
