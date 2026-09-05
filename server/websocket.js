@@ -1,4 +1,20 @@
 const { WebSocket, WebSocketServer } = require("ws");
+const Y = require("yjs");
+
+const yjsMessageType = 1;
+const initialCode = `function greet(name) {
+  console.log(\`Hello, \${name}!\`);
+}
+
+greet("OffGrid");
+`;
+
+function createYjsMessage(update) {
+  const message = new Uint8Array(update.length + 1);
+  message[0] = yjsMessageType;
+  message.set(update, 1);
+  return message;
+}
 
 function setupWebSocketServer(httpServer) {
   // Express serves pages over short-lived HTTP requests. The WebSocket server
@@ -6,6 +22,19 @@ function setupWebSocketServer(httpServer) {
   const webSocketServer = new WebSocketServer({
     server: httpServer,
     path: "/ws",
+  });
+  const sharedDocument = new Y.Doc();
+  const sharedText = sharedDocument.getText("main.js");
+  let documentInitialized = false;
+
+  sharedDocument.on("update", (update, sourceClient) => {
+    const message = createYjsMessage(update);
+
+    for (const client of webSocketServer.clients) {
+      if (client !== sourceClient && client.readyState === WebSocket.OPEN) {
+        client.send(message);
+      }
+    }
   });
 
   function broadcastClientCount() {
@@ -29,6 +58,32 @@ function setupWebSocketServer(httpServer) {
     client.isAlive = true;
     console.log("WebSocket client connected");
     broadcastClientCount();
+
+    // A full Yjs state update brings a new or returning browser up to date.
+    client.send(createYjsMessage(Y.encodeStateAsUpdate(sharedDocument)));
+
+    client.on("message", (data, isBinary) => {
+      if (!isBinary) {
+        return;
+      }
+
+      const message = new Uint8Array(data);
+
+      if (message[0] === yjsMessageType) {
+        Y.applyUpdate(sharedDocument, message.subarray(1), client);
+
+        // Initialize only after considering the first browser's state. This
+        // prevents duplicate sample text and lets a reconnecting browser offer
+        // its newer in-memory state after a brief host restart.
+        if (!documentInitialized) {
+          documentInitialized = true;
+
+          if (sharedText.length === 0) {
+            sharedText.insert(0, initialCode);
+          }
+        }
+      }
+    });
 
     client.on("pong", () => {
       client.isAlive = true;

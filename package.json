@@ -12,7 +12,9 @@
     "@codemirror/lang-javascript": "^6.2.5",
     "codemirror": "^6.0.2",
     "express": "^5.1.0",
-    "ws": "^8.21.3"
+    "ws": "^8.21.3",
+    "y-codemirror.next": "^0.3.6",
+    "yjs": "^13.6.32"
   },
   "devDependencies": {
     "vite": "^8.2.2"

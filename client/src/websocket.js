@@ -1,10 +1,37 @@
-const reconnectDelay = 1_500;
+import * as Y from "yjs";
 
-export function connectWebSocket({ onStateChange, onCountChange }) {
+const reconnectDelay = 1_500;
+const yjsMessageType = 1;
+
+function createYjsMessage(update) {
+  const message = new Uint8Array(update.length + 1);
+  message[0] = yjsMessageType;
+  message.set(update, 1);
+  return message;
+}
+
+export function connectWebSocket({ document, onStateChange, onCountChange }) {
   let socket;
   let reconnectTimer;
   let shouldReconnect = true;
   let reconnecting = false;
+  const remoteUpdateOrigin = {};
+
+  function sendDocumentUpdate(update) {
+    if (socket?.readyState === WebSocket.OPEN) {
+      socket.send(createYjsMessage(update));
+    }
+  }
+
+  function handleDocumentUpdate(update, origin) {
+    if (origin !== remoteUpdateOrigin) {
+      sendDocumentUpdate(update);
+    }
+  }
+
+  // This listener is registered once, outside reconnect(), so retries cannot
+  // accidentally send every local edit more than once.
+  document.on("update", handleDocumentUpdate);
 
   function connect(isReconnect = false) {
     reconnecting = isReconnect;
@@ -15,13 +42,27 @@ export function connectWebSocket({ onStateChange, onCountChange }) {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const webSocketUrl = `${protocol}//${window.location.host}/ws`;
     socket = new WebSocket(webSocketUrl);
+    socket.binaryType = "arraybuffer";
 
     socket.addEventListener("open", () => {
       reconnecting = false;
       onStateChange("Connected");
+
+      // Sending our current state also carries edits made while disconnected.
+      sendDocumentUpdate(Y.encodeStateAsUpdate(document));
     });
 
     socket.addEventListener("message", (event) => {
+      if (event.data instanceof ArrayBuffer) {
+        const message = new Uint8Array(event.data);
+
+        if (message[0] === yjsMessageType) {
+          Y.applyUpdate(document, message.subarray(1), remoteUpdateOrigin);
+        }
+
+        return;
+      }
+
       try {
         const message = JSON.parse(event.data);
 
@@ -57,6 +98,7 @@ export function connectWebSocket({ onStateChange, onCountChange }) {
   return function disconnect() {
     shouldReconnect = false;
     clearTimeout(reconnectTimer);
+    document.off("update", handleDocumentUpdate);
     socket?.close();
   };
 }

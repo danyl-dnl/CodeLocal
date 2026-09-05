@@ -1,8 +1,8 @@
 # OffGrid Collab
 
-An offline-first LAN collaborative coding platform. The current Stage 3 build
-adds a local WebSocket connection and live connected-client count to the LAN
-server foundation and single-user CodeMirror editor.
+An offline-first LAN collaborative coding platform. The current Stage 4 build
+uses Yjs to synchronize one shared CodeMirror document between browsers over
+the local WebSocket server.
 
 ## Run locally
 
@@ -12,9 +12,9 @@ npm start
 ```
 
 Open `http://localhost:3000` on the host computer. The page and terminal show
-the LAN address that another device on the same network can try. The sample
-`main.js` file lives only in browser memory and resets when the page reloads.
-Editors do not synchronize yet; WebSockets currently carry connection counts only.
+the LAN address that another device on the same network can try. All connected
+browsers share the sample `main.js` document in real time. The document lives
+in server memory and resets when the server restarts.
 
 To use another port:
 

@@ -1,4 +1,5 @@
 import "./styles.css";
+import * as Y from "yjs";
 import { createEditor } from "./editor";
 import { connectWebSocket } from "./websocket";
 
@@ -37,22 +38,26 @@ app.innerHTML = `
       <section class="editor-panel" aria-label="Code editor">
         <div class="tabbar">
           <div class="tab active"><span class="js-icon" aria-hidden="true">JS</span>main.js</div>
-          <div class="stage-label">Single-user mode</div>
+          <div class="stage-label">Live collaboration active</div>
         </div>
         <div id="editor" class="editor"></div>
         <footer class="statusbar">
           <span>JavaScript</span>
           <span>Spaces: 2</span>
-          <span>Local memory only</span>
+          <span>Shared document</span>
         </footer>
       </section>
     </main>
   </div>
 `;
 
-createEditor(document.querySelector("#editor"));
+const sharedDocument = new Y.Doc();
+const sharedText = sharedDocument.getText("main.js");
+
+createEditor(document.querySelector("#editor"), sharedText);
 
 const disconnectWebSocket = connectWebSocket({
+  document: sharedDocument,
   onStateChange(state) {
     const connectionStatus = document.querySelector("#connection-status");
     connectionStatus.className = `status connection-status ${state.toLowerCase()}`;

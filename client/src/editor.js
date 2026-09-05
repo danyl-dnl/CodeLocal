@@ -1,13 +1,9 @@
 import { basicSetup, EditorView } from "codemirror";
-import { EditorState } from "@codemirror/state";
+import { EditorState, Prec } from "@codemirror/state";
+import { keymap } from "@codemirror/view";
 import { javascript } from "@codemirror/lang-javascript";
-
-export const sampleCode = `function greet(name) {
-  console.log(\`Hello, \${name}!\`);
-}
-
-greet("OffGrid");
-`;
+import * as Y from "yjs";
+import { yCollab, yUndoManagerKeymap } from "y-codemirror.next";
 
 const editorTheme = EditorView.theme(
   {
@@ -47,10 +43,17 @@ const editorTheme = EditorView.theme(
   { dark: true },
 );
 
-export function createEditor(parent) {
+export function createEditor(parent, sharedText) {
+  const undoManager = new Y.UndoManager(sharedText);
   const state = EditorState.create({
-    doc: sampleCode,
-    extensions: [basicSetup, javascript(), editorTheme],
+    doc: sharedText.toString(),
+    extensions: [
+      basicSetup,
+      javascript(),
+      editorTheme,
+      yCollab(sharedText, null, { undoManager }),
+      Prec.high(keymap.of(yUndoManagerKeymap)),
+    ],
   });
 
   return new EditorView({ state, parent });
