@@ -38,7 +38,7 @@ function validateWorkspaceFileName(fileName) {
 function createWorkspacePersistence(
   sharedDocument,
   workspaceDirectory,
-  { onError, onStatus, onRename } = {},
+  { onError, onStatus, onRename, onProjectReplace } = {},
 ) {
   fs.mkdirSync(workspaceDirectory, { recursive: true });
   console.log(`Workspace: ${workspaceDirectory}`);
@@ -269,12 +269,134 @@ function createWorkspacePersistence(
     });
   }
 
+  function cancelPendingSaveTimers() {
+    for (const timer of saveTimers.values()) clearTimeout(timer);
+    saveTimers.clear();
+  }
+
+  async function getProjectSnapshot() {
+    cancelPendingSaveTimers();
+
+    return enqueue(async () => {
+      const snapshot = new Map();
+      for (const [fileName, sharedText] of sharedFiles.entries()) {
+        if (!validateWorkspaceFileName(fileName) || !(sharedText instanceof Y.Text)) {
+          continue;
+        }
+
+        const content = sharedText.toString();
+        if (lastSavedContent.get(fileName) !== content) {
+          markSaving(fileName);
+          try {
+            await fs.promises.writeFile(
+              path.join(workspaceDirectory, fileName),
+              content,
+              "utf8",
+            );
+            lastSavedContent.set(fileName, content);
+            diskFiles.add(fileName);
+            console.log(`Saved ${fileName} before export`);
+            markSaved(fileName);
+          } catch (error) {
+            reportError(`Could not save ${fileName} before export`, error);
+            throw error;
+          }
+        }
+        snapshot.set(fileName, content);
+      }
+      return snapshot;
+    });
+  }
+
+  async function replaceProject(importedFiles) {
+    cancelPendingSaveTimers();
+    pendingFiles.clear();
+    markSaving("project");
+
+    return enqueue(async () => {
+      const parentDirectory = path.dirname(workspaceDirectory);
+      const uniqueSuffix = `${process.pid}-${Date.now()}`;
+      const stagingDirectory = path.join(
+        parentDirectory,
+        `.offgrid-import-${uniqueSuffix}`,
+      );
+      const backupDirectory = path.join(
+        parentDirectory,
+        `.offgrid-backup-${uniqueSuffix}`,
+      );
+      let oldWorkspaceMoved = false;
+
+      try {
+        await fs.promises.mkdir(stagingDirectory, { recursive: false });
+        await fs.promises.writeFile(
+          path.join(stagingDirectory, initializationMarker),
+          "OffGrid workspace initialized\n",
+          "utf8",
+        );
+
+        for (const [fileName, content] of importedFiles) {
+          if (!validateWorkspaceFileName(fileName) || typeof content !== "string") {
+            throw new Error(`Import contains an invalid file: ${fileName}`);
+          }
+          await fs.promises.writeFile(
+            path.join(stagingDirectory, fileName),
+            content,
+            "utf8",
+          );
+        }
+
+        await fs.promises.rename(workspaceDirectory, backupDirectory);
+        oldWorkspaceMoved = true;
+        await fs.promises.rename(stagingDirectory, workspaceDirectory);
+      } catch (error) {
+        if (oldWorkspaceMoved) {
+          try {
+            await fs.promises.rename(backupDirectory, workspaceDirectory);
+          } catch (restoreError) {
+            console.error(`Could not restore workspace backup: ${restoreError.message}`);
+          }
+        }
+        await fs.promises.rm(stagingDirectory, { recursive: true, force: true });
+        reportError("Could not import project", error);
+        throw error;
+      }
+
+      try {
+        await fs.promises.rm(backupDirectory, { recursive: true, force: true });
+      } catch (error) {
+        console.warn(`Imported project, but could not remove its backup: ${error.message}`);
+      }
+
+      diskFiles.clear();
+      lastSavedContent.clear();
+      for (const [fileName, content] of importedFiles) {
+        diskFiles.add(fileName);
+        lastSavedContent.set(fileName, content);
+      }
+
+      onProjectReplace?.();
+      sharedDocument.transact(() => {
+        for (const fileName of [...sharedFiles.keys()]) sharedFiles.delete(fileName);
+        for (const [fileName, content] of importedFiles) {
+          const sharedText = new Y.Text();
+          sharedText.insert(0, content);
+          sharedFiles.set(fileName, sharedText);
+        }
+      }, "workspace-import");
+
+      console.log(`Imported ${importedFiles.size} project files`);
+      markSaved("project");
+    });
+  }
+
   return {
+    getProjectSnapshot,
+    replaceProject,
     sharedFiles,
     renameFile,
     close() {
       sharedFiles.unobserveDeep(reconcile);
-      for (const timer of saveTimers.values()) clearTimeout(timer);
+      cancelPendingSaveTimers();
     },
   };
 }

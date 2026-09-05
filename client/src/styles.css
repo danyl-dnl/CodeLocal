@@ -288,6 +288,27 @@ button { font: inherit; }
 
 .new-file-button:hover { color: #bdc6d8; border-color: #46516e; }
 
+.project-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.project-actions button {
+  min-width: 0;
+  padding: 7px 5px;
+  border: 1px solid #293147;
+  border-radius: 6px;
+  color: #7f8aa1;
+  background: #101521;
+  cursor: pointer;
+  font-size: 0.65rem;
+}
+
+.project-actions button:hover { color: #c6cede; border-color: #46516e; }
+.project-actions button:disabled { cursor: wait; opacity: 0.65; }
+
 .sidebar-note {
   position: absolute;
   right: 16px;
@@ -453,6 +474,8 @@ button { font: inherit; }
   cursor: pointer;
   font-weight: 700;
 }
+
+.dialog-actions button:disabled { cursor: wait; opacity: 0.65; }
 
 .secondary-button { color: #aeb7cb; background: #202738; }
 .primary-button { color: #fff; background: #5967dc; }

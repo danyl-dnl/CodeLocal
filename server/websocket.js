@@ -41,7 +41,13 @@ function setupWebSocketServer(httpServer) {
   function broadcastControl(message) {
     const encoded = JSON.stringify(message);
     for (const client of webSocketServer.clients) {
-      if (client.readyState === WebSocket.OPEN) client.send(encoded);
+      if (client.readyState === WebSocket.OPEN) {
+        try {
+          client.send(encoded);
+        } catch (error) {
+          console.warn(`Could not send control message: ${error.message}`);
+        }
+      }
     }
   }
 
@@ -59,6 +65,9 @@ function setupWebSocketServer(httpServer) {
       },
       onRename(rename) {
         broadcastControl({ type: "file-renamed", ...rename });
+      },
+      onProjectReplace() {
+        broadcastControl({ type: "project-replacing" });
       },
     },
   );
@@ -202,7 +211,7 @@ function setupWebSocketServer(httpServer) {
     workspace.close();
   });
 
-  return webSocketServer;
+  return { webSocketServer, workspace, broadcastControl };
 }
 
 module.exports = { setupWebSocketServer };

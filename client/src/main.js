@@ -42,6 +42,11 @@ app.innerHTML = `
         <div class="sidebar-heading">FILES</div>
         <div class="file-list" id="file-list" aria-live="polite"></div>
         <button class="new-file-button" id="new-file-button" type="button">+ New File</button>
+        <div class="project-actions">
+          <button id="import-project-button" type="button">Import ZIP</button>
+          <button id="export-project-button" type="button">Export ZIP</button>
+        </div>
+        <input id="project-zip-input" type="file" accept=".zip,application/zip" hidden />
 
         <section class="participants-panel" aria-labelledby="participants-heading">
           <div class="sidebar-heading" id="participants-heading">PARTICIPANTS</div>
@@ -122,6 +127,20 @@ app.innerHTML = `
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <div class="dialog" id="import-dialog" role="dialog" aria-modal="true" aria-labelledby="import-dialog-title" hidden>
+    <div class="dialog-card">
+      <p class="section-label">REPLACE SHARED PROJECT</p>
+      <h2 id="import-dialog-title">Import project?</h2>
+      <p class="dialog-copy" id="import-message"></p>
+      <p class="dialog-note">This will replace the current OffGrid workspace for everyone in this session.</p>
+      <p class="form-error" id="import-error" role="alert"></p>
+      <div class="dialog-actions">
+        <button class="secondary-button" id="cancel-import" type="button">Cancel</button>
+        <button class="primary-button" id="confirm-import" type="button">Import Project</button>
+      </div>
+    </div>
+  </div>
 `;
 
 const sharedDocument = new Y.Doc();
@@ -138,6 +157,7 @@ let disconnectSession;
 let sessionConnection;
 let updateParticipantList = () => {};
 let toastTimer;
+let selectedImportFile = null;
 
 function showToast(message, kind = "error") {
   const toast = document.querySelector("#toast");
@@ -154,6 +174,16 @@ function updateSaveStatus({ state, message }) {
   status.className = `save-status ${state}`;
   status.lastElementChild.textContent = labels[state] || "Saved";
   if (state === "failed") showToast(message || "The host could not save the project.");
+}
+
+function prepareForProjectReplacement() {
+  pendingActiveRename = null;
+  activeFileName = null;
+  editorView?.destroy();
+  editorView = null;
+  awareness?.setLocalStateField("cursor", null);
+  awareness?.setLocalStateField("activeFile", null);
+  editorElement.innerHTML = '<div class="empty-editor"><div><h2>Importing project…</h2><p>Preparing the shared files.</p></div></div>';
 }
 
 function showEmptyEditor() {
@@ -340,6 +370,13 @@ function startSession(participantName) {
     onFileRenamed(oldName, newName) {
       if (activeFileName === oldName) pendingActiveRename = newName;
     },
+    onProjectReplacing: prepareForProjectReplacement,
+    onProjectImported({ fileCount, skipped = [] }) {
+      const skippedMessage = skipped.length > 0
+        ? ` Skipped: ${skipped.join("; ")}.`
+        : "";
+      showToast(`Project imported with ${fileCount} files.${skippedMessage}`, "success");
+    },
   });
 
   disconnectSession = () => {
@@ -375,6 +412,78 @@ function openNewFileDialog() {
 }
 
 document.querySelector("#new-file-button").addEventListener("click", openNewFileDialog);
+
+const projectZipInput = document.querySelector("#project-zip-input");
+document.querySelector("#import-project-button").addEventListener("click", () => {
+  projectZipInput.value = "";
+  projectZipInput.click();
+});
+
+projectZipInput.addEventListener("change", () => {
+  const [file] = projectZipInput.files;
+  if (!file) return;
+  selectedImportFile = file;
+  document.querySelector("#import-message").textContent = `Import “${file.name}”?`;
+  document.querySelector("#import-error").textContent = "";
+  document.querySelector("#import-dialog").hidden = false;
+});
+
+document.querySelector("#cancel-import").addEventListener("click", () => {
+  selectedImportFile = null;
+  document.querySelector("#import-dialog").hidden = true;
+});
+
+document.querySelector("#confirm-import").addEventListener("click", async () => {
+  if (!selectedImportFile) return;
+  const button = document.querySelector("#confirm-import");
+  button.disabled = true;
+  button.textContent = "Importing…";
+  document.querySelector("#import-error").textContent = "";
+
+  try {
+    const response = await fetch("/api/project/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/zip" },
+      body: selectedImportFile,
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Project import failed.");
+    selectedImportFile = null;
+    document.querySelector("#import-dialog").hidden = true;
+  } catch (error) {
+    document.querySelector("#import-error").textContent = error.message;
+    showToast(error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = "Import Project";
+  }
+});
+
+document.querySelector("#export-project-button").addEventListener("click", async () => {
+  const button = document.querySelector("#export-project-button");
+  button.disabled = true;
+  button.textContent = "Exporting…";
+  try {
+    const response = await fetch("/api/project/export");
+    if (!response.ok) {
+      const result = await response.json();
+      throw new Error(result.error || "Project export failed.");
+    }
+    const archive = await response.blob();
+    const downloadUrl = URL.createObjectURL(archive);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = "offgrid-project.zip";
+    link.click();
+    URL.revokeObjectURL(downloadUrl);
+    showToast("Project exported as offgrid-project.zip.", "success");
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = "Export ZIP";
+  }
+});
 
 document.querySelector("#cancel-new-file").addEventListener("click", () => {
   document.querySelector("#file-dialog").hidden = true;

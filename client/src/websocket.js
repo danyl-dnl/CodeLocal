@@ -31,6 +31,8 @@ export function connectWebSocket({
   onWorkspaceError,
   onSaveStatus,
   onFileRenamed,
+  onProjectReplacing,
+  onProjectImported,
 }) {
   let socket;
   let reconnectTimer;
@@ -135,6 +137,10 @@ export function connectWebSocket({
             if (message.error) request.reject(new Error(message.error));
             else request.resolve(message);
           }
+        } else if (message.type === "project-replacing") {
+          onProjectReplacing?.();
+        } else if (message.type === "project-imported") {
+          onProjectImported?.(message);
         }
       } catch (error) {
         console.warn("Ignored an invalid WebSocket message.", error);
