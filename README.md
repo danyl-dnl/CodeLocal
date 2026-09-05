@@ -1,8 +1,9 @@
 # OffGrid Collab
 
-An offline-first LAN collaborative coding platform. The current Stage 7 build
-persists the collaborative project as real text files in the host's local
-`workspace/` directory.
+An offline-first LAN collaborative coding platform. The current Stage 8 build
+adds synchronized file rename, real host save feedback, clearer file actions,
+and a polished demo-ready workspace while keeping persistence in the host's
+local `workspace/` directory.
 
 ## Run locally
 

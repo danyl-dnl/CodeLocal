@@ -35,7 +35,11 @@ function validateWorkspaceFileName(fileName) {
   return true;
 }
 
-function createWorkspacePersistence(sharedDocument, workspaceDirectory, onError) {
+function createWorkspacePersistence(
+  sharedDocument,
+  workspaceDirectory,
+  { onError, onStatus, onRename } = {},
+) {
   fs.mkdirSync(workspaceDirectory, { recursive: true });
   console.log(`Workspace: ${workspaceDirectory}`);
 
@@ -72,6 +76,7 @@ function createWorkspacePersistence(sharedDocument, workspaceDirectory, onError)
   const lastSavedContent = new Map();
   const diskFiles = new Set();
   const saveTimers = new Map();
+  const pendingFiles = new Set();
   let operationQueue = Promise.resolve();
 
   sharedDocument.transact(() => {
@@ -93,14 +98,30 @@ function createWorkspacePersistence(sharedDocument, workspaceDirectory, onError)
   function reportError(message, error, sourceClient) {
     console.error(`${message}: ${error.message}`);
     onError?.(sourceClient, message);
+    onStatus?.({ state: "failed", message });
+  }
+
+  function markSaving(fileName) {
+    pendingFiles.add(fileName);
+    onStatus?.({ state: "saving", fileName });
+  }
+
+  function markSaved(fileName) {
+    pendingFiles.delete(fileName);
+    onStatus?.({
+      state: pendingFiles.size > 0 ? "saving" : "saved",
+      fileName,
+    });
   }
 
   function enqueue(operation) {
     operationQueue = operationQueue.then(operation, operation);
+    return operationQueue;
   }
 
   function scheduleSave(fileName) {
     clearTimeout(saveTimers.get(fileName));
+    markSaving(fileName);
     saveTimers.set(
       fileName,
       setTimeout(() => {
@@ -122,6 +143,7 @@ function createWorkspacePersistence(sharedDocument, workspaceDirectory, onError)
             lastSavedContent.set(fileName, content);
             diskFiles.add(fileName);
             console.log(`${existed ? "Saved" : "Created"} ${fileName}`);
+            markSaved(fileName);
           } catch (error) {
             reportError(`Could not save ${fileName}`, error);
           }
@@ -135,12 +157,17 @@ function createWorkspacePersistence(sharedDocument, workspaceDirectory, onError)
     saveTimers.delete(fileName);
     lastSavedContent.delete(fileName);
 
-    if (!diskFiles.has(fileName)) return;
+    if (!diskFiles.has(fileName)) {
+      markSaved(fileName);
+      return;
+    }
+    markSaving(fileName);
     enqueue(async () => {
       try {
         await fs.promises.unlink(path.join(workspaceDirectory, fileName));
         diskFiles.delete(fileName);
         console.log(`Deleted ${fileName}`);
+        markSaved(fileName);
       } catch (error) {
         if (error.code === "ENOENT") {
           diskFiles.delete(fileName);
@@ -184,8 +211,67 @@ function createWorkspacePersistence(sharedDocument, workspaceDirectory, onError)
 
   sharedFiles.observeDeep(reconcile);
 
+  async function renameFile(oldName, newName, sourceClient) {
+    if (
+      !validateWorkspaceFileName(oldName) ||
+      !validateWorkspaceFileName(newName)
+    ) {
+      return { error: "Use a safe, flat file name without slashes or '..'." };
+    }
+
+    return enqueue(async () => {
+      const oldText = sharedFiles.get(oldName);
+      if (!(oldText instanceof Y.Text)) {
+        return { error: "The original file no longer exists." };
+      }
+      if (sharedFiles.has(newName) || diskFiles.has(newName)) {
+        return { error: "A file with that name already exists." };
+      }
+
+      clearTimeout(saveTimers.get(oldName));
+      saveTimers.delete(oldName);
+      markSaving(oldName);
+
+      try {
+        const contentBeforeRename = oldText.toString();
+        const oldPath = path.join(workspaceDirectory, oldName);
+        const newPath = path.join(workspaceDirectory, newName);
+
+        if (lastSavedContent.get(oldName) !== contentBeforeRename) {
+          await fs.promises.writeFile(oldPath, contentBeforeRename, "utf8");
+        }
+        await fs.promises.rename(oldPath, newPath);
+
+        diskFiles.delete(oldName);
+        diskFiles.add(newName);
+        lastSavedContent.delete(oldName);
+        lastSavedContent.set(newName, contentBeforeRename);
+        pendingFiles.delete(oldName);
+
+        // Tell clients about the logical rename before the Yjs map changes.
+        // WebSocket message ordering lets active editors follow the new name.
+        onRename?.({ oldName, newName });
+        const contentAtPublish = oldText.toString();
+        sharedDocument.transact(() => {
+          const renamedText = new Y.Text();
+          renamedText.insert(0, contentAtPublish);
+          sharedFiles.set(newName, renamedText);
+          sharedFiles.delete(oldName);
+        }, "workspace-rename");
+
+        console.log(`Renamed ${oldName} to ${newName}`);
+        if (contentAtPublish === contentBeforeRename) markSaved(newName);
+        return { oldName, newName };
+      } catch (error) {
+        reportError(`Could not rename ${oldName}`, error, sourceClient);
+        return { error: `Could not rename ${oldName}.` };
+      }
+    });
+  }
+
   return {
     sharedFiles,
+    renameFile,
     close() {
       sharedFiles.unobserveDeep(reconcile);
       for (const timer of saveTimers.values()) clearTimeout(timer);

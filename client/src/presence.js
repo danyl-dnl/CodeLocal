@@ -49,16 +49,15 @@ export function renderParticipantList(awareness, listElement, localClientId) {
     const item = document.createElement("li");
     item.className = "participant";
 
-    const avatar = document.createElement("span");
-    avatar.className = "participant-avatar";
-    avatar.style.backgroundColor = participant.color;
-    avatar.textContent = participant.name.slice(0, 1).toUpperCase();
+    const colorIndicator = document.createElement("span");
+    colorIndicator.className = "participant-color";
+    colorIndicator.style.backgroundColor = participant.color;
 
     const name = document.createElement("span");
     name.className = "participant-name";
     name.textContent = participant.name;
 
-    item.append(avatar, name);
+    item.append(colorIndicator, name);
 
     const activeFile = document.createElement("span");
     activeFile.className = "participant-file";

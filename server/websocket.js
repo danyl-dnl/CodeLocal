@@ -38,13 +38,28 @@ function setupWebSocketServer(httpServer) {
   });
   const sharedDocument = new Y.Doc();
   const awareness = new Awareness(sharedDocument);
+  function broadcastControl(message) {
+    const encoded = JSON.stringify(message);
+    for (const client of webSocketServer.clients) {
+      if (client.readyState === WebSocket.OPEN) client.send(encoded);
+    }
+  }
+
   const workspace = createWorkspacePersistence(
     sharedDocument,
     path.join(__dirname, "..", "workspace"),
-    (sourceClient, message) => {
-      if (sourceClient?.readyState === WebSocket.OPEN) {
-        sourceClient.send(JSON.stringify({ type: "workspace-error", message }));
-      }
+    {
+      onError(sourceClient, message) {
+        if (sourceClient?.readyState === WebSocket.OPEN) {
+          sourceClient.send(JSON.stringify({ type: "workspace-error", message }));
+        }
+      },
+      onStatus(status) {
+        broadcastControl({ type: "save-status", ...status });
+      },
+      onRename(rename) {
+        broadcastControl({ type: "file-renamed", ...rename });
+      },
     },
   );
 
@@ -106,14 +121,34 @@ function setupWebSocketServer(httpServer) {
 
     // A full Yjs state update brings a new or returning browser up to date.
     client.send(createYjsMessage(Y.encodeStateAsUpdate(sharedDocument)));
+    client.send(JSON.stringify({ type: "save-status", state: "saved" }));
     client.send(
       createAwarenessMessage(
         encodeAwarenessUpdate(awareness, [...awareness.getStates().keys()]),
       ),
     );
 
-    client.on("message", (data, isBinary) => {
+    client.on("message", async (data, isBinary) => {
       if (!isBinary) {
+        try {
+          const message = JSON.parse(data.toString());
+          if (message.type === "rename-file") {
+            const result = await workspace.renameFile(
+              message.oldName,
+              message.newName,
+              client,
+            );
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(JSON.stringify({
+                type: "rename-result",
+                requestId: message.requestId,
+                ...result,
+              }));
+            }
+          }
+        } catch (error) {
+          console.warn(`Ignored invalid control message: ${error.message}`);
+        }
         return;
       }
 

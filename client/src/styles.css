@@ -52,7 +52,7 @@ button { font: inherit; }
 .brand h1, .brand p { margin: 0; }
 .brand h1 { font-size: 0.95rem; letter-spacing: -0.01em; }
 .brand p { margin-top: 2px; color: #69748d; font-size: 0.72rem; }
-.network-summary, .status { display: flex; align-items: center; }
+.network-summary, .status, .save-status { display: flex; align-items: center; }
 .network-summary { gap: 14px; min-width: 0; }
 .status { gap: 7px; color: #aeb7cb; font-size: 0.78rem; white-space: nowrap; }
 
@@ -72,6 +72,17 @@ button { font: inherit; }
   font-size: 0.75rem;
   white-space: nowrap;
 }
+
+.save-status {
+  gap: 7px;
+  min-width: 72px;
+  color: #aeb7cb;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.save-status.saving .dot { background: #f4c566; box-shadow: none; }
+.save-status.failed .dot { background: #ec6b75; box-shadow: none; }
 
 .dot {
   width: 7px;
@@ -140,16 +151,12 @@ button { font: inherit; }
   font-size: 0.76rem;
 }
 
-.participant-avatar {
-  display: grid;
+.participant-color {
   flex: 0 0 auto;
-  width: 22px;
-  height: 22px;
-  place-items: center;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  color: #fff;
-  font-size: 0.62rem;
-  font-weight: 750;
+  box-shadow: 0 0 8px currentColor;
 }
 
 .participant-name {
@@ -214,7 +221,12 @@ button { font: inherit; }
   font-weight: 800;
 }
 
-.file-delete {
+.file-actions {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.file-actions-button {
   width: 28px;
   height: 28px;
   margin-right: 3px;
@@ -223,13 +235,43 @@ button { font: inherit; }
   color: #626d83;
   background: transparent;
   cursor: pointer;
-  opacity: 0;
+  font-size: 0.55rem;
+  letter-spacing: -0.08em;
+  opacity: 0.55;
 }
 
-.file-row:hover .file-delete,
-.file-delete:focus { opacity: 1; }
+.file-row:hover .file-actions-button,
+.file-actions-button:focus { color: #bcc5d7; opacity: 1; }
 
-.file-delete:hover { color: #f28b93; background: #2b1820; }
+.file-menu {
+  position: absolute;
+  z-index: 20;
+  top: 30px;
+  right: 2px;
+  width: 112px;
+  padding: 5px;
+  border: 1px solid #303950;
+  border-radius: 8px;
+  background: #151b28;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.42);
+}
+
+.file-menu[hidden] { display: none; }
+
+.file-menu button {
+  width: 100%;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 5px;
+  color: #cbd3e3;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.72rem;
+  text-align: left;
+}
+
+.file-menu button:hover { background: #222a3c; }
+.file-menu .danger-action { color: #ef8991; }
 
 .new-file-button {
   width: 100%;
@@ -297,7 +339,12 @@ button { font: inherit; }
   place-items: center;
   color: #515b70;
   font-size: 0.82rem;
+  text-align: center;
 }
+
+.empty-editor h2 { margin: 0; color: #c8d0df; font-size: 1.05rem; }
+.empty-editor p { margin: 8px 0 18px; }
+.empty-editor .primary-button { padding: 9px 13px; border: 0; border-radius: 7px; cursor: pointer; }
 
 .cm-ySelectionInfo {
   opacity: 1 !important;
@@ -379,10 +426,17 @@ button { font: inherit; }
 }
 
 .dialog-copy {
-  margin: -10px 0 24px;
+  margin: -10px 0 8px;
   color: #8d97ad;
   font-size: 0.86rem;
   line-height: 1.55;
+}
+
+.dialog-note {
+  margin: 0 0 22px;
+  color: #606b82;
+  font-size: 0.73rem;
+  line-height: 1.5;
 }
 
 .dialog-actions {
@@ -403,6 +457,24 @@ button { font: inherit; }
 .secondary-button { color: #aeb7cb; background: #202738; }
 .primary-button { color: #fff; background: #5967dc; }
 .danger-button { color: #fff; background: #c84f5a; }
+
+.toast {
+  position: fixed;
+  z-index: 1100;
+  right: 20px;
+  bottom: 20px;
+  max-width: 360px;
+  padding: 11px 14px;
+  border: 1px solid #57303a;
+  border-radius: 9px;
+  color: #f1c8cc;
+  background: #25151b;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.4);
+  font-size: 0.76rem;
+}
+
+.toast[hidden] { display: none; }
+.toast.success { border-color: #285344; color: #bce8d2; background: #11251e; }
 
 .name-dialog[hidden] { display: none; }
 
@@ -486,7 +558,7 @@ button { font: inherit; }
 }
 
 @media (max-width: 700px) {
-  .network-address, .brand p, .stage-label, #lan-status { display: none; }
+  .network-address, .brand p, .stage-label, #lan-status, .save-status { display: none; }
   .editor-layout { grid-template-columns: 150px minmax(0, 1fr); }
 }
 

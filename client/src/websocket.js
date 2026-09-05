@@ -29,12 +29,16 @@ export function connectWebSocket({
   onStateChange,
   onCountChange,
   onWorkspaceError,
+  onSaveStatus,
+  onFileRenamed,
 }) {
   let socket;
   let reconnectTimer;
   let shouldReconnect = true;
   let reconnecting = false;
   const remoteUpdateOrigin = {};
+  const renameRequests = new Map();
+  let nextRequestId = 1;
 
   function sendDocumentUpdate(update) {
     if (socket?.readyState === WebSocket.OPEN) {
@@ -120,6 +124,17 @@ export function connectWebSocket({
           onCountChange(message.count);
         } else if (message.type === "workspace-error") {
           onWorkspaceError?.(message.message);
+        } else if (message.type === "save-status") {
+          onSaveStatus?.(message);
+        } else if (message.type === "file-renamed") {
+          onFileRenamed?.(message.oldName, message.newName);
+        } else if (message.type === "rename-result") {
+          const request = renameRequests.get(message.requestId);
+          if (request) {
+            renameRequests.delete(message.requestId);
+            if (message.error) request.reject(new Error(message.error));
+            else request.resolve(message);
+          }
         }
       } catch (error) {
         console.warn("Ignored an invalid WebSocket message.", error);
@@ -133,6 +148,10 @@ export function connectWebSocket({
         (clientId) => clientId !== document.clientID,
       );
       removeAwarenessStates(awareness, remoteClientIds, remoteUpdateOrigin);
+      for (const request of renameRequests.values()) {
+        request.reject(new Error("The server disconnected before the rename finished."));
+      }
+      renameRequests.clear();
 
       if (!shouldReconnect) {
         onStateChange("Disconnected");
@@ -159,12 +178,30 @@ export function connectWebSocket({
 
   connect();
 
-  return function disconnect() {
-    shouldReconnect = false;
-    clearTimeout(reconnectTimer);
-    awareness.setLocalState(null);
-    awareness.off("update", handleAwarenessUpdate);
-    document.off("update", handleDocumentUpdate);
-    socket?.close();
+  return {
+    renameFile(oldName, newName) {
+      if (socket?.readyState !== WebSocket.OPEN) {
+        return Promise.reject(new Error("Reconnect before renaming a file."));
+      }
+
+      const requestId = nextRequestId++;
+      socket.send(JSON.stringify({
+        type: "rename-file",
+        requestId,
+        oldName,
+        newName,
+      }));
+      return new Promise((resolve, reject) => {
+        renameRequests.set(requestId, { resolve, reject });
+      });
+    },
+    disconnect() {
+      shouldReconnect = false;
+      clearTimeout(reconnectTimer);
+      awareness.setLocalState(null);
+      awareness.off("update", handleAwarenessUpdate);
+      document.off("update", handleDocumentUpdate);
+      socket?.close();
+    },
   };
 }
