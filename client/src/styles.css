@@ -56,6 +56,23 @@ button { font: inherit; }
 .network-summary { gap: 14px; min-width: 0; }
 .status { gap: 7px; color: #aeb7cb; font-size: 0.78rem; white-space: nowrap; }
 
+.connection-status.connecting .dot,
+.connection-status.reconnecting .dot {
+  background: #f4c566;
+  box-shadow: 0 0 10px rgba(244, 197, 102, 0.45);
+}
+
+.connection-status.disconnected .dot {
+  background: #ec6b75;
+  box-shadow: 0 0 10px rgba(236, 107, 117, 0.45);
+}
+
+.client-count {
+  color: #7d879d;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
 .dot {
   width: 7px;
   height: 7px;
@@ -172,7 +189,7 @@ button { font: inherit; }
 }
 
 @media (max-width: 700px) {
-  .network-address, .brand p, .stage-label { display: none; }
+  .network-address, .brand p, .stage-label, #lan-status { display: none; }
   .editor-layout { grid-template-columns: 150px minmax(0, 1fr); }
 }
 

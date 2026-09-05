@@ -1,10 +1,15 @@
 const path = require("node:path");
+const http = require("node:http");
 const express = require("express");
 const { getLanAddresses } = require("./network");
+const { setupWebSocketServer } = require("./websocket");
 
 const app = express();
 const port = Number.parseInt(process.env.PORT, 10) || 3000;
 const clientDirectory = path.join(__dirname, "..", "dist");
+const httpServer = http.createServer(app);
+
+setupWebSocketServer(httpServer);
 
 app.get("/api/network-info", (_request, response) => {
   response.json({
@@ -18,13 +23,12 @@ app.use(express.static(clientDirectory));
 
 // Listening on 0.0.0.0 makes the server reachable through the host's LAN
 // address. Listening only on localhost would restrict it to this computer.
-app.listen(port, "0.0.0.0", (error) => {
-  if (error) {
-    console.error(`\nCould not start OffGrid Collab: ${error.message}\n`);
-    process.exitCode = 1;
-    return;
-  }
+httpServer.on("error", (error) => {
+  console.error(`\nCould not start OffGrid Collab: ${error.message}\n`);
+  process.exitCode = 1;
+});
 
+httpServer.listen(port, "0.0.0.0", () => {
   const lanAddresses = getLanAddresses();
 
   console.log("\nOffGrid Collab is running\n");

@@ -1,5 +1,6 @@
 import "./styles.css";
 import { createEditor } from "./editor";
+import { connectWebSocket } from "./websocket";
 
 const app = document.querySelector("#app");
 
@@ -14,7 +15,11 @@ app.innerHTML = `
         </div>
       </div>
       <div class="network-summary">
-        <span class="status"><span class="dot"></span><span id="server-status">Server connected</span></span>
+        <span class="status"><span class="dot"></span><span id="lan-status">Checking LAN</span></span>
+        <span class="status connection-status connecting" id="connection-status">
+          <span class="dot"></span><span id="connection-label">Connecting</span>
+        </span>
+        <span class="client-count" id="client-count">0 connected</span>
         <span class="network-address" id="network-address">Checking LAN…</span>
       </div>
     </header>
@@ -47,8 +52,22 @@ app.innerHTML = `
 
 createEditor(document.querySelector("#editor"));
 
+const disconnectWebSocket = connectWebSocket({
+  onStateChange(state) {
+    const connectionStatus = document.querySelector("#connection-status");
+    connectionStatus.className = `status connection-status ${state.toLowerCase()}`;
+    document.querySelector("#connection-label").textContent = state;
+  },
+  onCountChange(count) {
+    document.querySelector("#client-count").textContent =
+      `${count} ${count === 1 ? "client" : "clients"}`;
+  },
+});
+
+window.addEventListener("beforeunload", disconnectWebSocket);
+
 async function showNetworkInformation() {
-  const status = document.querySelector("#server-status");
+  const status = document.querySelector("#lan-status");
   const address = document.querySelector("#network-address");
 
   try {
@@ -61,12 +80,12 @@ async function showNetworkInformation() {
     const information = await response.json();
     const firstLanAddress = information.lanAddresses[0];
 
-    status.textContent = firstLanAddress ? "LAN ready" : "Local server running";
+    status.textContent = firstLanAddress ? "LAN ready" : "Local only";
     address.textContent = firstLanAddress
       ? `http://${firstLanAddress.address}:${information.port}`
       : information.localhostUrl;
   } catch (error) {
-    status.textContent = "Connection unavailable";
+    status.textContent = "LAN unavailable";
     address.textContent = window.location.origin;
     console.error(error);
   }
