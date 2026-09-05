@@ -20,7 +20,7 @@ button { font: inherit; }
 
 .workspace {
   display: grid;
-  grid-template-rows: 64px minmax(0, 1fr);
+  grid-template-rows: 82px minmax(0, 1fr);
   height: 100vh;
   background: #080b12;
 }
@@ -29,13 +29,64 @@ button { font: inherit; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  padding: 0 20px;
-  border-bottom: 1px solid #22293a;
-  background: #0e121d;
+  gap: 34px;
+  padding: 0 30px;
+  border-bottom: 2px solid #23324a;
+  background:
+    radial-gradient(circle at 24% 0%, rgba(37, 70, 112, 0.17), transparent 38%),
+    linear-gradient(100deg, #09111d 0%, #0d1726 52%, #09121f 100%);
+  box-shadow: 0 3px 12px rgba(16, 43, 74, 0.35);
 }
 
-.brand { display: flex; align-items: center; gap: 11px; }
+.brand { display: flex; min-width: 0; align-items: center; gap: 14px; }
+
+.offgrid-logo {
+  width: 58px;
+  height: 48px;
+  flex: 0 0 auto;
+  overflow: visible;
+  filter: drop-shadow(0 0 7px rgba(94, 128, 255, 0.2));
+}
+
+.offgrid-logo path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.logo-signal { stroke: #4be0ab; stroke-width: 6; }
+.signal-inner { stroke-width: 5; }
+.logo-bracket { stroke: #eaf2ff; stroke-width: 7; }
+.logo-slash { stroke: #657eff; stroke-width: 7; }
+
+.brand-divider,
+.status-divider {
+  width: 1px;
+  height: 38px;
+  flex: 0 0 auto;
+  background: #26364d;
+}
+
+.brand h1 {
+  margin: 0;
+  color: #f5f8ff;
+  font-size: 1.7rem;
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  white-space: nowrap;
+}
+
+.brand h1 span:last-child {
+  color: #7188ff;
+  background: linear-gradient(135deg, #9bb0ff, #5878ff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.brand p {
+  overflow: hidden;
+  margin: 0 0 0 10px;
+  color: #8ea2bf;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .brand-mark {
   display: grid;
@@ -49,12 +100,10 @@ button { font: inherit; }
   font-weight: 800;
 }
 
-.brand h1, .brand p { margin: 0; }
-.brand h1 { font-size: 0.95rem; letter-spacing: -0.01em; }
-.brand p { margin-top: 2px; color: #69748d; font-size: 0.72rem; }
 .network-summary, .status, .save-status { display: flex; align-items: center; }
-.network-summary { gap: 14px; min-width: 0; }
-.status { gap: 7px; color: #aeb7cb; font-size: 0.78rem; white-space: nowrap; }
+.network-summary { gap: 22px; min-width: 0; }
+.status { gap: 11px; color: #e6edf9; font-size: 0.95rem; white-space: nowrap; }
+.header-utility { display: none; }
 
 .connection-status.connecting .dot,
 .connection-status.reconnecting .dot {
@@ -68,16 +117,19 @@ button { font: inherit; }
 }
 
 .client-count {
-  color: #7d879d;
-  font-size: 0.75rem;
+  color: #dce5f5;
+  font-size: 0.95rem;
   white-space: nowrap;
 }
+
+.client-summary { display: flex; align-items: center; gap: 10px; }
+.client-summary svg { width: 24px; height: 24px; fill: #eef4ff; }
 
 .save-status {
   gap: 7px;
   min-width: 72px;
-  color: #aeb7cb;
-  font-size: 0.75rem;
+  color: #8fa1bb;
+  font-size: 0.78rem;
   white-space: nowrap;
 }
 
@@ -85,25 +137,11 @@ button { font: inherit; }
 .save-status.failed .dot { background: #ec6b75; box-shadow: none; }
 
 .dot {
-  width: 7px;
-  height: 7px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: #48d597;
   box-shadow: 0 0 10px rgba(72, 213, 151, 0.55);
-}
-
-.network-address {
-  overflow: hidden;
-  max-width: 280px;
-  padding: 7px 10px;
-  border: 1px solid #293147;
-  border-radius: 7px;
-  color: #8d97ae;
-  background: #0a0e17;
-  font-family: "SFMono-Regular", Consolas, monospace;
-  font-size: 0.72rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .editor-layout {
@@ -581,11 +619,20 @@ button { font: inherit; }
 }
 
 @media (max-width: 700px) {
-  .network-address, .brand p, .stage-label, #lan-status, .save-status { display: none; }
+  .brand p, .brand-divider, .stage-label, .save-status { display: none; }
+  .topbar { gap: 16px; padding: 0 16px; }
+  .network-summary { gap: 12px; }
+  .status-divider { height: 30px; }
   .editor-layout { grid-template-columns: 150px minmax(0, 1fr); }
 }
 
 @media (max-width: 480px) {
+  .offgrid-logo { width: 44px; }
+  .brand { gap: 7px; }
+  .brand h1 { font-size: 1.25rem; }
+  .connection-status { font-size: 0; }
+  .client-summary svg, .status-divider { display: none; }
+  .client-count { font-size: 0.78rem; }
   .editor-layout { grid-template-columns: 1fr; }
   .sidebar { display: none; }
   .statusbar span:nth-child(2) { display: none; }

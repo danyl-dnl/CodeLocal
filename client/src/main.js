@@ -23,17 +23,30 @@ app.innerHTML = `
   <div class="workspace">
     <header class="topbar">
       <div class="brand">
-        <span class="brand-mark" aria-hidden="true">O</span>
-        <div><h1>OffGrid</h1><p>LAN collaboration</p></div>
+        <svg class="offgrid-logo" viewBox="0 0 72 58" aria-hidden="true">
+          <path class="logo-signal signal-outer" d="M20 16c9-9 23-9 32 0" />
+          <path class="logo-signal signal-inner" d="M27 23c5-5 13-5 18 0" />
+          <path class="logo-bracket" d="M20 29 8 41l12 12M52 29l12 12-12 12" />
+          <path class="logo-slash" d="m40 29-8 24" />
+        </svg>
+        <h1><span>Off</span><span>Grid</span></h1>
+        <span class="brand-divider" aria-hidden="true"></span>
+        <p>Code Together. No Internet Needed.</p>
       </div>
       <div class="network-summary">
-        <span class="status"><span class="dot"></span><span id="lan-status">Checking LAN</span></span>
+        <span class="header-utility" id="lan-status">Checking LAN</span>
+        <span class="header-utility" id="network-address">Checking LAN…</span>
+        <span class="save-status saved" id="save-status"><span class="dot"></span><span>Saved</span></span>
         <span class="status connection-status disconnected" id="connection-status">
           <span class="dot"></span><span id="connection-label">Waiting</span>
         </span>
-        <span class="client-count" id="client-count">0 clients</span>
-        <span class="save-status saved" id="save-status"><span class="dot"></span><span>Saved</span></span>
-        <span class="network-address" id="network-address">Checking LAN…</span>
+        <span class="status-divider" aria-hidden="true"></span>
+        <span class="client-summary">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M16 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 0 8Zm8 1c-1.2 0-2.3.25-3.25.7A7.4 7.4 0 0 1 15 19v1h8v-1c0-3.3-3.1-6-7-6ZM8 14c-4 0-7 2.4-7 5.5V21h14v-1.5C15 16.4 12 14 8 14Z" />
+          </svg>
+          <span class="client-count" id="client-count">0 clients</span>
+        </span>
       </div>
     </header>
 
