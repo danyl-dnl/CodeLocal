@@ -17,8 +17,8 @@ export function validateFileName(files, value) {
     return { error: "File names must be 80 characters or fewer." };
   }
 
-  if (fileName === "." || fileName === ".." || /[\\/\u0000-\u001f]/.test(fileName)) {
-    return { error: "Use a flat file name without slashes or control characters." };
+  if (fileName.includes("..") || /[\\/\u0000-\u001f]/.test(fileName)) {
+    return { error: "Use a flat file name without slashes, '..', or control characters." };
   }
 
   if (files.has(fileName)) {

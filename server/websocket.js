@@ -6,23 +6,11 @@ const {
   encodeAwarenessUpdate,
   removeAwarenessStates,
 } = require("y-protocols/awareness");
+const path = require("node:path");
+const { createWorkspacePersistence } = require("./workspace");
 
 const yjsMessageType = 1;
 const awarenessMessageType = 2;
-const initialFiles = {
-  "main.js": `import { greet } from "./utils.js";
-
-greet("OffGrid");
-`,
-  "utils.js": `export function greet(name) {
-  console.log(\`Hello, \${name}!\`);
-}
-`,
-  "README.md": `# OffGrid Project
-
-Collaborative coding over a local network.
-`,
-};
 
 function createYjsMessage(update) {
   const message = new Uint8Array(update.length + 1);
@@ -45,10 +33,20 @@ function setupWebSocketServer(httpServer) {
     server: httpServer,
     path: "/ws",
   });
+  webSocketServer.on("error", (error) => {
+    console.error(`WebSocket server error: ${error.message}`);
+  });
   const sharedDocument = new Y.Doc();
-  const sharedFiles = sharedDocument.getMap("files");
   const awareness = new Awareness(sharedDocument);
-  let documentInitialized = false;
+  const workspace = createWorkspacePersistence(
+    sharedDocument,
+    path.join(__dirname, "..", "workspace"),
+    (sourceClient, message) => {
+      if (sourceClient?.readyState === WebSocket.OPEN) {
+        sourceClient.send(JSON.stringify({ type: "workspace-error", message }));
+      }
+    },
+  );
 
   sharedDocument.on("update", (update, sourceClient) => {
     const message = createYjsMessage(update);
@@ -123,23 +121,6 @@ function setupWebSocketServer(httpServer) {
 
       if (message[0] === yjsMessageType) {
         Y.applyUpdate(sharedDocument, message.subarray(1), client);
-
-        // Initialize only after considering the first browser's state. This
-        // prevents duplicate sample text and lets a reconnecting browser offer
-        // its newer in-memory state after a brief host restart.
-        if (!documentInitialized) {
-          documentInitialized = true;
-
-          if (sharedFiles.size === 0) {
-            sharedDocument.transact(() => {
-              for (const [fileName, content] of Object.entries(initialFiles)) {
-                const fileText = new Y.Text();
-                sharedFiles.set(fileName, fileText);
-                fileText.insert(0, content);
-              }
-            });
-          }
-        }
       } else if (message[0] === awarenessMessageType) {
         applyAwarenessUpdate(awareness, message.subarray(1), client);
       }
@@ -181,7 +162,10 @@ function setupWebSocketServer(httpServer) {
     }
   }, 30_000);
 
-  webSocketServer.on("close", () => clearInterval(heartbeat));
+  webSocketServer.on("close", () => {
+    clearInterval(heartbeat);
+    workspace.close();
+  });
 
   return webSocketServer;
 }

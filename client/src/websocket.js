@@ -28,6 +28,7 @@ export function connectWebSocket({
   awareness,
   onStateChange,
   onCountChange,
+  onWorkspaceError,
 }) {
   let socket;
   let reconnectTimer;
@@ -117,6 +118,8 @@ export function connectWebSocket({
 
         if (message.type === "client-count" && Number.isInteger(message.count)) {
           onCountChange(message.count);
+        } else if (message.type === "workspace-error") {
+          onWorkspaceError?.(message.message);
         }
       } catch (error) {
         console.warn("Ignored an invalid WebSocket message.", error);

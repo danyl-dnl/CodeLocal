@@ -46,7 +46,7 @@ app.innerHTML = `
           <div class="sidebar-heading" id="participants-heading">PARTICIPANTS</div>
           <ul class="participant-list" id="participant-list"></ul>
         </section>
-        <p class="sidebar-note">Project files are in memory only.</p>
+        <p class="sidebar-note">Project files are saved on this host.</p>
       </aside>
 
       <section class="editor-panel" aria-label="Code editor">
@@ -61,7 +61,7 @@ app.innerHTML = `
         <footer class="statusbar">
           <span id="language-label">Plain text</span>
           <span>Spaces: 2</span>
-          <span>Shared in memory</span>
+          <span>Saved to host</span>
         </footer>
       </section>
     </main>
@@ -246,6 +246,9 @@ function startSession(participantName) {
     onCountChange(count) {
       document.querySelector("#client-count").textContent =
         `${count} ${count === 1 ? "client" : "clients"}`;
+    },
+    onWorkspaceError(message) {
+      console.error(`Workspace error: ${message}`);
     },
   });
 
