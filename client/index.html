@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="OffGrid Collab local network connection screen"
+    />
+    <title>OffGrid Collab</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/main.js" defer></script>
+  </head>
+  <body>
+    <main class="page-shell">
+      <section class="hero">
+        <p class="eyebrow">OFFLINE-FIRST COLLABORATION</p>
+        <h1>OffGrid Collab</h1>
+        <p class="intro">
+          A collaborative coding platform designed to work entirely across your
+          local network—without cloud services or internet access.
+        </p>
+
+        <div class="status-row" aria-label="Server status">
+          <span class="status"><span class="dot"></span>Local Server Running</span>
+          <span class="status" id="lan-status"><span class="dot"></span>Checking LAN</span>
+        </div>
+      </section>
+
+      <section class="connection-card" aria-labelledby="connection-title">
+        <div>
+          <p class="section-label">HOSTING ON THIS DEVICE</p>
+          <h2 id="connection-title">Invite another laptop</h2>
+        </div>
+
+        <div class="address-group">
+          <p class="address-label">On this computer</p>
+          <code id="localhost-address">Loading…</code>
+        </div>
+
+        <div class="address-group">
+          <p class="address-label">From another device on this network</p>
+          <div id="lan-addresses" class="address-list" aria-live="polite">
+            <code>Detecting LAN addresses…</code>
+          </div>
+        </div>
+
+        <ol class="instructions">
+          <li>Connect the other device to the same Wi-Fi, LAN, or hotspot.</li>
+          <li>Open one of the LAN addresses shown above in its browser.</li>
+          <li>Keep this server running. Internet access is not required.</li>
+        </ol>
+
+        <p class="note">
+          <strong>Why not localhost?</strong> Localhost always means “this device,”
+          so another laptop must use the host's LAN address instead.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>
