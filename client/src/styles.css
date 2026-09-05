@@ -116,6 +116,54 @@ button { font: inherit; }
   letter-spacing: 0.12em;
 }
 
+.participants-panel {
+  margin-top: 26px;
+  padding-top: 18px;
+  border-top: 1px solid #1d2434;
+}
+
+.participant-list {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.participant {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 10px;
+  color: #cbd3e3;
+  font-size: 0.76rem;
+}
+
+.participant-avatar {
+  display: grid;
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 750;
+}
+
+.participant-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.participant-you {
+  margin-left: auto;
+  color: #5f6980;
+  font-size: 0.65rem;
+}
+
 .file {
   display: flex;
   width: 100%;
@@ -176,6 +224,97 @@ button { font: inherit; }
 
 .stage-label { align-self: center; padding-right: 14px; color: #555f75; font-size: 0.68rem; }
 .editor { min-height: 0; overflow: hidden; background: #0c101a; }
+
+.cm-ySelectionInfo {
+  opacity: 1 !important;
+  padding: 2px 5px !important;
+  border-radius: 4px 4px 4px 0;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 0.68rem !important;
+  line-height: 1.25 !important;
+  white-space: nowrap;
+}
+
+.name-dialog {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(5, 8, 14, 0.82);
+  backdrop-filter: blur(8px);
+}
+
+.name-dialog[hidden] { display: none; }
+
+.name-card {
+  width: min(100%, 410px);
+  padding: 32px;
+  border: 1px solid #293147;
+  border-radius: 18px;
+  background: #101521;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.45);
+}
+
+.name-card .brand-mark { margin-bottom: 24px; }
+
+.section-label {
+  margin: 0 0 8px;
+  color: #7f8bed;
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+}
+
+.name-card h2 {
+  margin: 0;
+  color: #eef2ff;
+  font-size: 1.5rem;
+  letter-spacing: -0.03em;
+}
+
+.name-card p:not(.section-label) {
+  margin: 12px 0 24px;
+  color: #828ca3;
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.name-card label {
+  display: block;
+  margin-bottom: 7px;
+  color: #aeb7cb;
+  font-size: 0.75rem;
+}
+
+.name-card input {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #323c57;
+  border-radius: 8px;
+  outline: none;
+  color: #eef2ff;
+  background: #0a0e17;
+  font: inherit;
+}
+
+.name-card input:focus {
+  border-color: #6f7bf7;
+  box-shadow: 0 0 0 3px rgba(111, 123, 247, 0.16);
+}
+
+.name-card button {
+  width: 100%;
+  margin-top: 14px;
+  padding: 11px 14px;
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+  background: #5967dc;
+  cursor: pointer;
+  font-weight: 700;
+}
 
 .statusbar {
   display: flex;

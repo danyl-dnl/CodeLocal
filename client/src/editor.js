@@ -43,7 +43,7 @@ const editorTheme = EditorView.theme(
   { dark: true },
 );
 
-export function createEditor(parent, sharedText) {
+export function createEditor(parent, sharedText, awareness) {
   const undoManager = new Y.UndoManager(sharedText);
   const state = EditorState.create({
     doc: sharedText.toString(),
@@ -51,7 +51,7 @@ export function createEditor(parent, sharedText) {
       basicSetup,
       javascript(),
       editorTheme,
-      yCollab(sharedText, null, { undoManager }),
+      yCollab(sharedText, awareness, { undoManager }),
       Prec.high(keymap.of(yUndoManagerKeymap)),
     ],
   });
